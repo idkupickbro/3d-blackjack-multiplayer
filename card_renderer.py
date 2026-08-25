@@ -105,75 +105,166 @@ class Button:
         self.is_hovered = self.rect.collidepoint(pos)
 
 
-class BettingPanel:
-    """Panel for betting"""
+class Chip:
+    """Represents a betting chip with visual design"""
     
-    def __init__(self, x, y, width=300):
+    # Chip colors by value
+    CHIP_COLORS = {
+        'all-in': (255, 0, 0),      # Red
+        100: (255, 255, 255),        # White
+        500: (255, 0, 0),            # Red
+        1000: (0, 0, 0)              # Black
+    }
+    
+    CHIP_BORDER_COLORS = {
+        'all-in': (200, 0, 0),
+        100: (200, 200, 200),
+        500: (200, 0, 0),
+        1000: (100, 100, 100)
+    }
+    
+    TEXT_COLORS = {
+        'all-in': (255, 255, 255),
+        100: (0, 0, 0),
+        500: (255, 255, 255),
+        1000: (255, 255, 255)
+    }
+    
+    def __init__(self, x, y, value, radius=35):
+        self.x = x
+        self.y = y
+        self.value = value
+        self.radius = radius
+        self.rect = pygame.Rect(x - radius, y - radius, radius * 2, radius * 2)
+        self.font_large = pygame.font.Font(None, 28)
+        self.font_small = pygame.font.Font(None, 16)
+        self.is_hovered = False
+    
+    def draw(self, surface):
+        """Draw the chip with 3D effect"""
+        color = self.CHIP_COLORS.get(self.value, (100, 100, 100))
+        border_color = self.CHIP_BORDER_COLORS.get(self.value, (50, 50, 50))
+        text_color = self.TEXT_COLORS.get(self.value, (255, 255, 255))
+        
+        # Outer shadow for 3D effect
+        pygame.draw.circle(surface, (0, 0, 0), (self.x + 3, self.y + 3), self.radius)
+        
+        # Main chip circle
+        pygame.draw.circle(surface, color, (self.x, self.y), self.radius)
+        
+        # Border
+        pygame.draw.circle(surface, border_color, (self.x, self.y), self.radius, 3)
+        
+        # Inner circle for detail
+        pygame.draw.circle(surface, border_color, (self.x, self.y), self.radius - 5, 1)
+        
+        # Draw value on chip
+        if self.value == 'all-in':
+            value_text = self.font_large.render('ALL', True, text_color)
+            in_text = self.font_small.render('IN', True, text_color)
+            surface.blit(value_text, (self.x - value_text.get_width() // 2, self.y - value_text.get_height() // 2 - 5))
+            surface.blit(in_text, (self.x - in_text.get_width() // 2, self.y + in_text.get_height() // 2))
+        else:
+            value_text = self.font_large.render(str(self.value), True, text_color)
+            surface.blit(value_text, (self.x - value_text.get_width() // 2, self.y - value_text.get_height() // 2))
+    
+    def is_clicked(self, pos):
+        """Check if chip is clicked"""
+        return self.rect.collidepoint(pos)
+    
+    def update(self, pos):
+        """Update chip hover state"""
+        self.is_hovered = self.rect.collidepoint(pos)
+
+
+class BettingPanel:
+    """Panel for betting with visual chips"""
+    
+    def __init__(self, x, y, width=500):
         self.x = x
         self.y = y
         self.width = width
         self.height = 200
         self.current_bet = 0
         self.min_bet = 10
-        self.max_bet = 1000
-        self.font = pygame.font.Font(None, 28)
+        self.max_bet = 10000
+        self.font = pygame.font.Font(None, 32)
         self.small_font = pygame.font.Font(None, 20)
         
-        # Buttons
-        button_y = y + 100
-        self.bet_buttons = [
-            Button(x + 10, button_y, 60, 40, "$10", (100, 50, 50)),
-            Button(x + 75, button_y, 60, 40, "$50", (100, 50, 50)),
-            Button(x + 140, button_y, 60, 40, "$100", (100, 50, 50)),
-            Button(x + 205, button_y, 60, 40, "$500", (100, 50, 50)),
+        # Create chips
+        chip_radius = 35
+        chip_spacing = 100
+        start_x = x + 40
+        start_y = y + 80
+        
+        self.chips = [
+            Chip(start_x, start_y, 100, chip_radius),
+            Chip(start_x + chip_spacing, start_y, 500, chip_radius),
+            Chip(start_x + chip_spacing * 2, start_y, 1000, chip_radius),
+            Chip(start_x + chip_spacing * 3, start_y, 'all-in', chip_radius),
         ]
         
-        self.clear_button = Button(x + 10, button_y + 50, 90, 40, "Clear", (100, 100, 100))
-        self.confirm_button = Button(x + 175, button_y + 50, 90, 40, "Bet", (50, 100, 50))
+        # Buttons
+        self.clear_button = Button(x + 40, start_y + 80, 100, 40, "Clear", (100, 100, 100))
+        self.confirm_button = Button(x + 360, start_y + 80, 100, 40, "Confirm", (50, 100, 50))
     
     def draw(self, surface):
-        """Draw the betting panel"""
-        pygame.draw.rect(surface, (200, 200, 200), (self.x, self.y, self.width, self.height))
-        pygame.draw.rect(surface, (0, 0, 0), (self.x, self.y, self.width, self.height), 2)
+        """Draw the betting panel with chips"""
+        pygame.draw.rect(surface, (34, 139, 34), (self.x, self.y, self.width, self.height))
+        pygame.draw.rect(surface, (255, 255, 255), (self.x, self.y, self.width, self.height), 3)
         
         # Title
-        title = self.font.render("Betting", True, (0, 0, 0))
-        surface.blit(title, (self.x + 10, self.y + 10))
+        title = self.font.render("Place Your Bet", True, (255, 255, 255))
+        surface.blit(title, (self.x + 20, self.y + 15))
         
-        # Current bet
-        bet_text = self.small_font.render(f"Bet: ${self.current_bet}", True, (0, 0, 0))
-        surface.blit(bet_text, (self.x + 10, self.y + 50))
+        # Current bet display
+        bet_text = self.small_font.render(f"Current Bet: ${self.current_bet}", True, (255, 255, 255))
+        surface.blit(bet_text, (self.x + 20, self.y + 60))
+        
+        # Draw chips
+        for chip in self.chips:
+            chip.draw(surface)
         
         # Draw buttons
-        for button in self.bet_buttons:
-            button.draw(surface)
-        
         self.clear_button.draw(surface)
         self.confirm_button.draw(surface)
     
     def handle_click(self, pos):
-        """Handle button clicks"""
-        for i, button in enumerate(self.bet_buttons):
-            if button.is_clicked(pos):
-                bet_amounts = [10, 50, 100, 500]
-                self.current_bet += bet_amounts[i]
-                if self.current_bet > self.max_bet:
+        """Handle chip and button clicks"""
+        # Check chip clicks
+        for chip in self.chips:
+            if chip.is_clicked(pos):
+                if chip.value == 'all-in':
+                    # All-in sets bet to max balance
                     self.current_bet = self.max_bet
+                else:
+                    self.current_bet += chip.value
+                    if self.current_bet > self.max_bet:
+                        self.current_bet = self.max_bet
+                return
         
+        # Check button clicks
         if self.clear_button.is_clicked(pos):
             self.current_bet = 0
+        
+        if self.confirm_button.is_clicked(pos):
+            return self.current_bet
     
     def get_bet(self):
         """Get current bet"""
         return self.current_bet
+    
+    def set_max_bet(self, balance):
+        """Set max bet based on player balance"""
+        self.max_bet = balance
     
     def reset(self):
         """Reset bet"""
         self.current_bet = 0
     
     def update(self, pos):
-        """Update button states"""
-        for button in self.bet_buttons:
-            button.update(pos)
+        """Update chip and button hover states"""
+        for chip in self.chips:
+            chip.update(pos)
         self.clear_button.update(pos)
         self.confirm_button.update(pos)
